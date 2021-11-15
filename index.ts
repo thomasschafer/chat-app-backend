@@ -1,12 +1,31 @@
 import express from "express";
 import * as http from "http";
+import { Server } from "socket.io";
+
+const PORT = 8000;
+const ALLOWED_ORIGINS = ["http://localhost:3000"];
 
 const app = express();
 const server = http.createServer(app);
-const PORT = 8000;
+const io = new Server(server, {
+  cors: {
+    origin: ALLOWED_ORIGINS,
+    methods: ["GET", "POST"],
+  },
+});
 
-app.get("/", (req, res) => {
-  res.send("<h1>Hello world 5!</h1>");
+io.on("connection", (socket) => {
+  console.log("Server: A user connected");
+
+  socket.on("new message", (msg) => {
+    console.log("New message from client: " + msg);
+
+    io.emit("message received", { message: msg });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Server: A user disconnected");
+  });
 });
 
 server.listen(PORT, () => {
