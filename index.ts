@@ -17,10 +17,14 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("Server: A user connected");
 
-  socket.on("new-message", (msg: { sender: string; body: string }) => {
+  socket.on("chat-id", (chatId) => {
+    socket.join(chatId);
+  });
+
+  socket.on("new-message", (msg: { sender: string; body: string; chatId: string }) => {
     console.log("New message from client: " + msg);
 
-    io.emit("message received", msg);
+    io.sockets.in(msg.chatId).emit("message received", msg);
   });
 
   socket.on("disconnect", () => {
