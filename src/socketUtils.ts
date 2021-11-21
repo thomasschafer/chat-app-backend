@@ -33,3 +33,10 @@ export const updateUser =
     // TODO: Don't emit update to all chats
     io.sockets.in(userUpdates.chatId).emit("user-was-updated", userUpdates);
   };
+
+export const getUserNameFromID =
+  (client: MongoClient, socket: Socket) =>
+  async ({ userId }: { userId: string }) => {
+    const userName = await getUserName(client, userId);
+    socket.emit("username", { userName });
+  };

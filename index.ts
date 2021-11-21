@@ -4,7 +4,7 @@ import { Server } from "socket.io";
 import { MongoClient } from "mongodb";
 
 import { DB_URI } from "./src/mongoDBUtils";
-import { joinChatHandler, updateUser } from "./src/socketUtils";
+import { getUserNameFromID, joinChatHandler, updateUser } from "./src/socketUtils";
 
 const client = new MongoClient(DB_URI);
 
@@ -27,6 +27,8 @@ io.on("connection", async (socket) => {
   socket.on("chat-id", joinChatHandler(client, socket, io));
 
   socket.on("update-user", updateUser(client, io));
+
+  socket.on("request-username", getUserNameFromID(client, socket));
 
   socket.on("disconnect", () => {
     console.log("Server: A user disconnected");
