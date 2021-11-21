@@ -1,23 +1,65 @@
-import e from "cors";
-import { Collection } from "mongodb";
+import { MongoClient } from "mongodb";
 import { chatMessage } from "./types";
 
 export const DB_URI = "mongodb://localhost:27017";
 
 export const updateMessageThread = async (
-  collection: Collection,
+  client: MongoClient,
   chatId: string,
   newMessage: chatMessage
 ) => {
-  let initialChatRoom = await collection.findOne({ chatId: chatId });
+  const chatRoomsCollection = client.db("chatApp").collection("chatRooms");
+  let initialChatRoom = await chatRoomsCollection.findOne({ chatId: chatId });
 
   if (!initialChatRoom) {
-    await collection.insertOne({ chatId: chatId, messageThread: [] });
+    await chatRoomsCollection.insertOne({ chatId: chatId, messageThread: [] });
   }
-  await collection.updateOne({ chatId: chatId }, { $push: { messageThread: newMessage } });
+  await chatRoomsCollection.updateOne({ chatId: chatId }, { $push: { messageThread: newMessage } });
 };
 
-export const getMessageThread = async (collection: Collection, chatId: string) => {
-  const chatRoom = await collection.findOne({ chatId: chatId });
-  return chatRoom?.messageThread;
+export const getMessageThread = async (client: MongoClient, chatId: string) => {
+  const chatRoomsCollection = client.db("chatApp").collection("chatRooms");
+  const userNamesCollection = client.db("chatApp").collection("userNames");
+
+  const messageThread = await chatRoomsCollection.findOne(
+    { chatId: chatId },
+    { projection: { messageThread: 1 } }
+  );
+  const senderIds = await chatRoomsCollection.distinct("messageThread.senderId", {
+    chatId: chatId,
+  });
+  const userNamesInChatRoom = await userNamesCollection
+    .find({ userId: { $in: senderIds } })
+    .toArray();
+  let userNamesObj = new Map();
+  for (const user of userNamesInChatRoom) {
+    if (user && typeof user.userId === "string") {
+      userNamesObj.set(user.userId, user.userName);
+    }
+  }
+  const messageThreadWithUpdatedUsernames = messageThread?.messageThread.map(
+    (message: chatMessage) => ({
+      ...message,
+      userName: userNamesObj.get(message.senderId),
+    })
+  );
+  return messageThreadWithUpdatedUsernames;
+};
+
+export const updateUserName = async (client: MongoClient, userId: string, newUserName: string) => {
+  const userNamesCollection = await client.db("chatApp").collection("userNames");
+  await userNamesCollection.updateOne(
+    { userId: userId },
+    { $set: { userId: userId, userName: newUserName } },
+    { upsert: true }
+  );
+};
+
+export const getUserName = async (client: MongoClient, userId: string) => {
+  const userNamesCollection = await client.db("chatApp").collection("userNames");
+  const userName = await userNamesCollection.findOne(
+    { userId: userId },
+    { projection: { userName: 1 } }
+  );
+  return userName?.userName;
 };

@@ -1,18 +1,16 @@
 import { MongoClient } from "mongodb";
 import { Socket, Server } from "socket.io";
 
-import { getMessageThread, updateMessageThread } from "./mongoDBUtils";
+import { getMessageThread, getUserName, updateMessageThread, updateUserName } from "./mongoDBUtils";
 
 const newMessageHandler =
   (client: MongoClient, chatId: string, io: Server) =>
-  async (msg: { senderId: string; body: string }) => {
-    console.log("New message from client: " + msg);
-    const chatRoomsCollection = client.db("chatApp").collection("chatRooms");
-    await updateMessageThread(chatRoomsCollection, chatId, msg);
+  async (msg: { senderId: string; body: string; userName?: string }) => {
+    console.log(`New message from sender ${msg.senderId}`);
+    await updateMessageThread(client, chatId, msg);
+    msg.userName = await getUserName(client, msg.senderId);
     io.sockets.in(chatId).emit("message-received", msg);
-
-    const msgThread = await getMessageThread(chatRoomsCollection, chatId);
-    console.log("Successfully updated message thread:", chatId, "now:", msgThread);
+    console.log("Successfully updated message thread:", chatId);
   };
 
 export const joinChatHandler =
@@ -20,10 +18,18 @@ export const joinChatHandler =
     // TODO: FIX ANY TYPE
     socket.join(chatId);
 
-    const chatRoomsCollection = client.db("chatApp").collection("chatRooms");
-
-    const msgThread = await getMessageThread(chatRoomsCollection, chatId);
+    const msgThread = await getMessageThread(client, chatId);
     io.sockets.in(chatId).emit("message-thread", msgThread);
 
     socket.on("new-message", newMessageHandler(client, chatId, io));
+  };
+
+export const updateUser =
+  (client: MongoClient, io: Server) =>
+  (userUpdates: { chatId: string; senderId: string; userName: string }) => {
+    console.log(`Updating user with userUpdates: ${JSON.stringify(userUpdates)}`);
+    updateUserName(client, userUpdates.senderId, userUpdates.userName);
+    // TODO: Implement alternative solution that doesn't involve users sending senderId through websocket (security risk)
+    // TODO: Don't emit update to all chats
+    io.sockets.in(userUpdates.chatId).emit("user-was-updated", userUpdates);
   };
