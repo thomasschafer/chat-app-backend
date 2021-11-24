@@ -1,15 +1,13 @@
 import express from "express";
 import * as http from "http";
 import { Server } from "socket.io";
-import { MongoClient } from "mongodb";
+import { connect } from "mongoose";
 
-import { DB_URI } from "./src/mongoDBUtils";
-import { getUserNameFromID, joinChatHandler, updateUser } from "./src/socketUtils";
-
-const client = new MongoClient(DB_URI);
+import { getUserNameFromID, joinChatHandler, updateChat, updateUser } from "./src/socketUtils";
 
 const PORT = 8000;
 const ALLOWED_ORIGINS = ["http://localhost:3000"];
+const DB_URI = "mongodb://localhost:27017";
 
 const app = express();
 const server = http.createServer(app);
@@ -22,13 +20,16 @@ const io = new Server(server, {
 
 io.on("connection", async (socket) => {
   console.log("Server: A user connected");
-  await client.connect();
 
-  socket.on("chat-id", joinChatHandler(client, socket, io));
+  await connect(`${DB_URI}/chatApp2`);
 
-  socket.on("update-user", updateUser(client, io));
+  socket.on("chat-id", joinChatHandler(socket, io));
 
-  socket.on("request-username", getUserNameFromID(client, socket));
+  socket.on("update-user", updateUser(io));
+
+  socket.on("update-chat", updateChat(io));
+
+  socket.on("request-username", getUserNameFromID(socket));
 
   socket.on("disconnect", () => {
     console.log("Server: A user disconnected");
