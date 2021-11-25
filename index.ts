@@ -3,7 +3,12 @@ import * as http from "http";
 import { Server } from "socket.io";
 import { connect } from "mongoose";
 
-import { getUserNameFromID, joinChatHandler, updateChat, updateUser } from "./src/socketUtils";
+import {
+  joinChatHandler,
+  requestUsernameHandler,
+  updateChatHandler,
+  updateUserHandler,
+} from "./src/socketUtils";
 
 const PORT = 8000;
 const ALLOWED_ORIGINS = ["http://localhost:3000"];
@@ -23,13 +28,13 @@ io.on("connection", async (socket) => {
 
   await connect(`${DB_URI}/chatApp2`);
 
-  socket.on("chat-id", joinChatHandler(socket, io));
+  socket.on("join-chat", joinChatHandler(socket, io));
 
-  socket.on("update-user", updateUser(io));
+  socket.on("update-user", updateUserHandler(io));
 
-  socket.on("update-chat", updateChat(io));
+  socket.on("update-chat", updateChatHandler(io));
 
-  socket.on("request-username", getUserNameFromID(socket));
+  socket.on("request-username", requestUsernameHandler(socket));
 
   socket.on("disconnect", () => {
     console.log("Server: A user disconnected");

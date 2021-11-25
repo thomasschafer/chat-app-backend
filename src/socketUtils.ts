@@ -1,37 +1,8 @@
 import { Socket, Server } from "socket.io";
-import { Schema, model } from "mongoose";
 
-interface ChatMessage {
-  senderUserId: string;
-  body: string;
-  userName?: string;
-}
+import { ChatRoomModel, UserModel } from "./mongoSchema";
 
-interface ChatRoom {
-  chatId: string;
-  chatName?: string;
-  messageThread: Array<ChatMessage>;
-}
-
-const chatRoomSchema = new Schema<ChatRoom>({
-  chatId: { type: String, required: true },
-  chatName: String,
-  messageThread: [{ senderUserId: String, body: String, userName: String }],
-});
-
-const ChatRoomModel = model<ChatRoom>("chatRoom", chatRoomSchema);
-
-interface User {
-  userId: string;
-  userName?: string;
-}
-
-const userSchema = new Schema<User>({
-  userId: { type: String, required: true },
-  userName: String,
-});
-
-const UserModel = model<User>("user", userSchema);
+// TODO: CHECK that DB calls have been successful
 
 const newMessageHandler =
   (chatId: string, io: Server) =>
@@ -44,6 +15,7 @@ const newMessageHandler =
       { upsert: true }
     );
 
+    msg.userName = await getUsernameFromID(msg.senderUserId);
     io.sockets.in(chatId).emit("message-received", msg);
     console.log("Successfully updated message thread:", chatId);
   };
@@ -58,52 +30,63 @@ export const joinChatHandler = (socket: Socket, io: Server) => async (chatId: st
   const userNames = new Map();
   if (msgThread) {
     for (let msg of msgThread) {
-      console.log("msg", msg);
+      console.log("msgStart", msg);
       let userName = userNames.get(msg.senderUserId);
       if (!userName) {
         const user = await UserModel.findOne({ userId: msg.senderUserId });
         userName = user?.userName;
         userNames.set(msg.senderUserId, userName);
       }
-      console.log("setting", msg);
-      msg.userName = userName;
+      if (userName) {
+        msg.userName = userName;
+      }
+      console.log("msgEnd", msg, "userName", userName);
     }
   }
 
   console.log("updatedMsgThread", msgThread);
   io.sockets.in(chatId).emit("message-thread", msgThread);
 
+  const chatName = chat?.chatName;
+  io.sockets.in(chatId).emit("chat-name", { chatName }); //TODO: IMPLEMENT ON FRONTEND
+
   socket.on("new-message", newMessageHandler(chatId, io));
 };
 
-export const updateChat =
+export const updateChatHandler =
   (io: Server) => async (chatUpdates: { chatId: string; chatName: string }) => {
     console.log(`Updating chat with chatUpdates: ${JSON.stringify(chatUpdates)}`);
+
     await ChatRoomModel.updateOne(
       { chatId: chatUpdates.chatId },
-      { chatName: chatUpdates.chatName }
+      { chatName: chatUpdates.chatName },
+      { upsert: true }
     );
 
-    io.sockets.in(chatUpdates.chatId).emit("chat-was-updated", chatUpdates);
+    io.sockets.in(chatUpdates.chatId).emit("chat-name", { chatName: chatUpdates.chatName });
   };
 
-export const updateUser =
+export const updateUserHandler =
   (io: Server) =>
   async (userUpdates: { chatId: string; senderUserId: string; userName: string }) => {
     console.log(`Updating user with userUpdates: ${JSON.stringify(userUpdates)}`);
     await UserModel.updateOne(
       { userId: userUpdates.senderUserId },
-      { userName: userUpdates.userName }
+      { userName: userUpdates.userName },
+      { upsert: true }
     );
-    // TODO: CHECK that this has been successful
     // TODO: Implement alternative solution that doesn't involve users sending senderUserId through websocket (security risk)
     io.sockets.in(userUpdates.chatId).emit("user-was-updated", userUpdates);
   };
 
-export const getUserNameFromID =
+const getUsernameFromID = async (userId: string) => {
+  const user = await UserModel.findOne({ userId: userId });
+  return user?.userName;
+};
+
+export const requestUsernameHandler =
   (socket: Socket) =>
   async ({ userId }: { userId: string }) => {
-    const user = await UserModel.findOne({ userId: userId });
-    const userName = user?.userName;
+    const userName = await getUsernameFromID(userId);
     socket.emit("username", { userName });
   };
