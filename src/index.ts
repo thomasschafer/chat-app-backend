@@ -8,11 +8,8 @@ import {
   requestUsernameHandler,
   updateChatHandler,
   updateUserHandler,
-} from "./src/socketUtils";
-
-const PORT = 8000;
-const ALLOWED_ORIGINS = ["http://localhost:3000"];
-const DB_URI = "mongodb://localhost:27017";
+} from "./socketUtils";
+import { ALLOWED_ORIGINS, DB_URI, PORT } from "./constants";
 
 const app = express();
 const server = http.createServer(app);
