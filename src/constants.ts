@@ -1,4 +1,4 @@
-export const PORT = 8000;
+export const PORT = 443;
 export const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "https://kobble.io/",
