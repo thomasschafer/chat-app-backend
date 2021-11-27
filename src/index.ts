@@ -9,7 +9,7 @@ import {
   updateChatHandler,
   updateUserHandler,
 } from "./socketUtils";
-import { ALLOWED_ORIGINS, DB_URI, PORT } from "./constants";
+import { ALLOWED_HEADERS, ALLOWED_ORIGINS, DB_URI, PORT } from "./constants";
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +17,8 @@ const io = new Server(server, {
   cors: {
     origin: ALLOWED_ORIGINS,
     methods: ["GET", "POST"],
+    allowedHeaders: ALLOWED_HEADERS,
+    credentials: true
   },
 });
 

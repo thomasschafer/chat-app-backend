@@ -1,4 +1,5 @@
 export const PORT = 8080;
+export const ALLOWED_HEADERS = ["kobble-header"];
 export const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "https://kobble.io/",
