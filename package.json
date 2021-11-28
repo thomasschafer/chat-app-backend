@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc --build",
-    "prod-start": "tsc --build && node dist/index.js"
+    "prod": "tsc --build && node dist/index.js",
+    "prod-pm2": "tsc --build && pm2 start dist/index.js"
   },
   "repository": {
     "type": "git",
