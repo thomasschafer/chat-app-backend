@@ -48,7 +48,7 @@ export const joinChatHandler = (socket: Socket, io: Server) => async (chatId: st
   io.sockets.in(chatId).emit("message-thread", msgThread);
 
   const chatName = chat?.chatName;
-  io.sockets.in(chatId).emit("chat-name", { chatName }); //TODO: IMPLEMENT ON FRONTEND
+  io.sockets.in(chatId).emit("chat-name", { chatName });
 
   socket.on("new-message", newMessageHandler(chatId, io));
 };
