@@ -1,6 +1,6 @@
 import { Socket, Server } from "socket.io";
 
-import { ChatRoomModel, UserModel } from "./mongoSchema";
+import { ChatRoomModel, UserModel } from "../db/schema";
 
 // TODO: CHECK that DB calls have been successful
 

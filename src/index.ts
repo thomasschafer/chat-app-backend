@@ -8,7 +8,7 @@ import {
   requestUsernameHandler,
   updateChatHandler,
   updateUserHandler,
-} from "./socketUtils";
+} from "./socket";
 import { ALLOWED_ORIGINS, DB_URI, PORT } from "./constants";
 
 const app = express();
