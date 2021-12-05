@@ -6,4 +6,4 @@ export const ALLOWED_ORIGINS = [
   "https://kobble-api.com",
   "https://www.kobble-api.com",
 ];
-export const DB_URI = `mongodb://${process.env.CHAT_APP_DEV ? "localhost" : "mongodb"}:27017`;
+export const DB_URI = "mongodb://mongo:27017";
